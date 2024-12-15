@@ -144,13 +144,14 @@ async def register(request: Request) -> Response:
                     {"this_id": site.id},
                 )
                 previous_site = await cur.fetchone()
-                if previous_site is None:
-                    logger.error("next site is none")
-                    return Response(status_code=INTERNAL_SERVER_ERROR)
-                await cur.execute(
-                    "UPDATE site SET previous = %(previous_id)s WHERE id = %(this_id)s",
-                    {"previous_id": previous_site.id, "this_id": site.id},
-                )
+                if previous_site is not None:
+                    await cur.execute(
+                        """
+                        UPDATE site SET previous = %(previous_id)s
+                        WHERE id = %(this_id)s
+                        """,
+                        {"previous_id": previous_site.id, "this_id": site.id},
+                    )
     return templates.TemplateResponse(
         "register.jinja", {"request": request, "error": error}
     )
