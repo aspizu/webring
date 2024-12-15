@@ -16,10 +16,9 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from webring.misc import seconds_since_epoch
-
 from .db import db
 from .env import env
+from .misc import seconds_since_epoch
 
 if TYPE_CHECKING:
     from psycopg import AsyncCursor
