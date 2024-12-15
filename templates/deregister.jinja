@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <title>De-register | WebRing</title>
+</head>
+
+<body>
+    {% if success %}
+    <div class="success">Successfully removed your site from the webring.</div>
+    {% else %}
+    {% if error %}
+    <div class="error">Error: {{ error }}</div>
+    {% endif %}
+    <h2>This will remove your site from the webring, you will never get your webring neighbours again.</h2>
+    <form method="post">
+        <label for="url">URL:</label>
+        <input type="url" name="url" id="url" required />
+        <br />
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" required minlength="8" />
+        <br />
+        <button type="submit">Remove my site from the webring</button>
+    </form>
+    {% endif %}
+</body>
+
+</html>
