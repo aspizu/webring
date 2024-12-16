@@ -309,7 +309,7 @@ async def login(request: Request) -> Response:
 async def index(request: Request) -> Response:
     status = None
     statuses = []
-    if request.session["site"]:
+    if request.session.get("site"):
         async with await db() as conn, conn.cursor() as cur:
             await cur.execute(
                 """
@@ -333,7 +333,7 @@ async def index(request: Request) -> Response:
         status = formdata.get("status")
         if not (isinstance(status, str) and len(status) <= MAX_STATUS_LENGTH):
             return Response("invalid form data", status_code=BAD_REQUEST)
-        if request.session["site"] is None:
+        if not request.session.get("site"):
             return Response("not logged in", status_code=UNAUTHORIZED)
         async with await db() as conn, conn.cursor() as cur:
             await cur.execute(
