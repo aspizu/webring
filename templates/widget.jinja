@@ -1,36 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "page.jinja" %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/static/style.css" />
-    <title>Widget | WebRing</title>
-</head>
+{% block title %}WebRing Widget{% endblock %}
 
-<body>
-    {% if widget %}
-    <button id="copy">copy</button>
-    <pre><code>{{ widget }}</code></pre>
-    <h3>This is how it will look like:</h3>
-    {{widget|safe}}
-    <script>
-        const widget = `{{widget|safe}}`
-        document.getElementById("copy").onclick = () => {
-            navigator.clipboard.writeText(widget)
-        }
-    </script>
-    {% else %}
-    {% if error %}
-    <div class="error">Error: {{ error }}</div>
-    {% endif %}
-    <form method="post">
-        <label for="url">URL:</label>
-        <input type="url" name="url" id="url" required />
-        <br />
-        <button type="submit">Get widget</button>
-    </form>
-    {% endif %}
-</body>
+{% block content %}
 
-</html>
+{% if widget %}
+<button id="copy">copy</button>
+<pre><code>{{ widget }}</code></pre>
+<h3>This is how it will look like:</h3>
+{{widget|safe}}
+<script>
+    const widget = `{{widget|safe}}`
+    document.getElementById("copy").onclick = () => {
+        navigator.clipboard.writeText(widget)
+    }
+</script>
+{% else %}
+{% if error %}
+<div class="error">Error: {{ error }}</div>
+{% endif %}
+<form method="post">
+    <label for="url">URL:</label>
+    <input type="url" name="url" id="url" required />
+    <br />
+    <button type="submit">Get widget</button>
+</form>
+{% endif %}
+
+{% endblock %}

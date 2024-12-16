@@ -1,22 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "page.jinja" %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/static/style.css" />
-    <title>WebRing</title>
-</head>
+{% block title %}Home{% endblock %}
 
-<body>
-    <h1>WebRing</h1>
-    <ul>
-        <li><a href="/register">Add your site</a></li>
-        <li><a href="/deregister">Remove your site</a></li>
-        <li><a href="/widget">Add HTML widget to your homepage</a></li>
-        <li><a href="/random">Random site</a></li>
-        <li><a href="/ring">View entire ring</a></li>
-    </ul>
-</body>
+{% block content %}
 
-</html>
+<h1>What is this?</h1>
+
+WebRing chains websites together, if your website is a personal blog and you do
+recreational programming, you can add your website to the webring.
+
+{% if request.session["site"] %}
+
+<h2> Update your status </h2>
+
+Your current status:
+
+<blockquote>{{status}}</blockquote>
+
+<h2>Include in your website:</h2>
+
+<pre><code>
+const response = await fetch("{{host}}/get_status?site={{request.session["site"]}}")
+console.log(await response.json())
+{
+    "success": true,
+    "status": "{{status}}",
+    "id": ...,
+    "created_at": ...
+}
+</code></pre>
+
+<form method="post">
+    <input type="text" name="status" id="status" required maxlength="256" />
+    <button type="submit">Update status</button>
+</form>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Created at</th>
+    </tr>
+    {% for status in statuses %}
+    <tr>
+        <td>{{status.id}}</td>
+        <td>{{status.status}}</td>
+        <td>{{status.created_at}}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endif %}
+
+{% endblock %}

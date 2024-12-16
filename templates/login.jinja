@@ -1,18 +1,17 @@
 {% extends "page.jinja" %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
 
+{% if success %}
+<div class="success">Successfully logged in.</div>
+<a href="/">Home</a>
+{% else %}
 {% if error %}
 <div class="error">Error: {{ error }}</div>
 {% endif %}
-
 <form class="form" method="post">
-    <div class="input">
-        <label for="url">URL:</label>
-        <input type="url" name="url" id="url" required />
-    </div>
     <div class="input">
         <label for="email">Email:</label>
         <input type="email" name="email" id="email" required />
@@ -21,7 +20,8 @@
         <label for="password">Password:</label>
         <input type="password" name="password" id="password" required minlength="8" />
     </div>
-    <button type="submit">Register</button>
+    <button type="submit">Login</button>
 </form>
+{% endif %}
 
 {% endblock %}

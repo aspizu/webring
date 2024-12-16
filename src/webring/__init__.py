@@ -7,11 +7,14 @@ from http.client import (
     INTERNAL_SERVER_ERROR,
     NOT_FOUND,
     TEMPORARY_REDIRECT,
+    UNAUTHORIZED,
 )
 from typing import TYPE_CHECKING, Any
 
 from starlette.applications import Starlette
-from starlette.responses import HTMLResponse, Response
+from starlette.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
@@ -27,6 +30,7 @@ if TYPE_CHECKING:
 
 URL_REGEX = re.compile(r"https?://[^/]+/?")
 MIN_PASSWORD_LENGTH = 8
+MAX_STATUS_LENGTH = 256
 
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="templates")
@@ -270,22 +274,139 @@ async def ring(request: Request) -> Response:
     )
 
 
+async def login(request: Request) -> Response:
+    error = None
+    success = False
+    if request.method == "POST":
+        formdata = await request.form()
+        email = formdata.get("email")
+        password = formdata.get("password")
+        if not (
+            isinstance(email, str)
+            and isinstance(password, str)
+            and "@" in email
+            and "." in email
+        ):
+            return Response("invalid form data", status_code=BAD_REQUEST)
+        async with await db() as conn, conn.cursor() as cur:
+            await cur.execute(
+                "SELECT * FROM site WHERE email = %(email)s", {"email": email}
+            )
+            site = await cur.fetchone()
+            if site is None:
+                error = "That email is not in the webring."
+            elif password != site.password_hash:
+                error = "Incorrect password."
+            else:
+                request.session["site"] = site.id
+                request.session["email"] = email
+                success = True
+    return templates.TemplateResponse(
+        "login.jinja", {"request": request, "error": error, "success": success}
+    )
+
+
+async def index(request: Request) -> Response:
+    status = None
+    statuses = []
+    if request.session["site"]:
+        async with await db() as conn, conn.cursor() as cur:
+            await cur.execute(
+                """
+                SELECT status FROM status WHERE site = %(site)s
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                {"site": request.session["site"]},
+            )
+            status = await cur.fetchone()
+            status = None if status is None else status.status
+            await cur.execute(
+                """
+                SELECT * FROM status WHERE site = %(site)s
+                ORDER BY created_at DESC
+                """,
+                {"site": request.session["site"]},
+            )
+            statuses = await cur.fetchall()
+    if request.method == "POST":
+        formdata = await request.form()
+        status = formdata.get("status")
+        if not (isinstance(status, str) and len(status) <= MAX_STATUS_LENGTH):
+            return Response("invalid form data", status_code=BAD_REQUEST)
+        if request.session["site"] is None:
+            return Response("not logged in", status_code=UNAUTHORIZED)
+        async with await db() as conn, conn.cursor() as cur:
+            await cur.execute(
+                """
+                INSERT INTO status (site, status, created_at)
+                VALUES (%(site)s, %(status)s, %(created_at)s) RETURNING id
+                """,
+                {
+                    "site": request.session["site"],
+                    "status": status,
+                    "created_at": seconds_since_epoch(),
+                },
+            )
+
+    return templates.TemplateResponse(
+        "index.jinja",
+        {
+            "request": request,
+            "status": status,
+            "host": env.HOST,
+            "statuses": statuses,
+        },
+    )
+
+
+async def get_status(request: Request) -> Response:
+    site = request.query_params.get("site")
+    if not (isinstance(site, str) and site.isdigit()):
+        return JSONResponse(
+            {"success": False, "message": "site? NOT PROVIDED OR NOT INTEGER"}
+        )
+    async with await db() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT * FROM status WHERE site = %(site)s
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            {"site": site},
+        )
+        status = await cur.fetchone()
+        if status is None:
+            return JSONResponse({"success": False, "message": "NO STATUS FOUND"})
+        return JSONResponse(
+            {
+                "success": True,
+                "status": status.status,
+                "id": status.id,
+                "created_at": status.created_at,
+            }
+        )
+
+
 app = Starlette(
     debug=env.DEBUG,
     routes=[
+        Route("/get_status", get_status),
         Route("/register", register, methods=["GET", "POST"]),
+        Route("/login", login, methods=["GET", "POST"]),
         Route("/deregister", deregister, methods=["GET", "POST"]),
-        Route(
-            "/",
-            lambda request: templates.TemplateResponse(
-                "index.jinja", {"request": request}
-            ),
-        ),
+        Route("/", index, methods=["GET", "POST"]),
         Route("/widget", widget, methods=["GET", "POST"]),
         Route("/ring", ring),
         Route("/random", random_redirect),
         Route("/previous", previous_redirect),
         Route("/next", next_redirect),
         Mount("/static", StaticFiles(directory="static"), name="static"),
+    ],
+    middleware=[
+        Middleware(
+            SessionMiddleware,
+            secret_key=env.SECRET_KEY,
+            https_only=True,
+            same_site="strict",
+        )
     ],
 )

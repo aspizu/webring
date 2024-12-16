@@ -1,25 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "page.jinja" %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/static/style.css" />
-    <title>WebRing</title>
-</head>
+{% block title %}WebRing{% endblock %}
 
-<body>
-    <h1>WebRing</h1>
-    <table>
-        <tr>
-            <th>URL</th>
-        </tr>
-        {% for site in sites %}
-        <tr>
-            <td><a href="{{ site.url }}">{{ site.url }}</a></td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
+{% block content %}
 
-</html>
+<h1>WebRing</h1>
+<table>
+    <tr>
+        <th>URL</th>
+    </tr>
+    {% for site in sites %}
+    <tr>
+        <td><a href="{{ site.url }}">{{ site.url }}</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

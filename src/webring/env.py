@@ -10,3 +10,4 @@ class env:  # noqa: N801
     DEBUG: bool = _env.bool("DEBUG")
     HOST: str = _env.str("HOST")
     DATABASE_URL: str = _env.str("DATABASE_URL")
+    SECRET_KEY: str = _env.str("SECRET_KEY")
